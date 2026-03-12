@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
 import { useRealtimeOrders } from "@/hooks/useRealtimeOrders";
 import { useRealtimeMenu } from "@/hooks/useRealtimeMenu";
 import type { Tables } from "@/integrations/supabase/types";
@@ -16,7 +17,14 @@ interface OrderPanelProps {
   menuHook: ReturnType<typeof useRealtimeMenu>;
 }
 
+/**
+ * Order panel shown when clicking a table
+ * - Shows current order items with status
+ * - Allows adding/removing items (only pending items)
+ * - Submit order to kitchen
+ */
 const OrderPanel = ({ table, ordersHook, menuHook }: OrderPanelProps) => {
+  const { user } = useAuth();
   const { menu } = menuHook;
   const {
     getOrderForTable, createOrder, addOrderItem, removeOrderItem,
@@ -61,22 +69,17 @@ const OrderPanel = ({ table, ordersHook, menuHook }: OrderPanelProps) => {
     }
     try {
       await submitOrder(order.id);
-      toast.success("Đã gửi order sang bếp!");
-    } catch {
-      toast.error("Lỗi khi gửi order");
-    }
+      toast.success("🔥 Đã gửi order sang bếp!");
+    } catch { toast.error("Lỗi khi gửi order"); }
   };
 
   const categoryLabel: Record<string, string> = {
-    all: "Tất cả",
-    appetizer: "Khai vị",
-    main: "Món chính",
-    dessert: "Tráng miệng",
-    drink: "Đồ uống",
+    all: "Tất cả", appetizer: "Khai vị", main: "Món chính", dessert: "Tráng miệng", drink: "Đồ uống",
   };
 
   return (
     <div className="space-y-4">
+      {/* Current order items */}
       {order && order.items.length > 0 && (
         <div className="space-y-2">
           <h3 className="font-semibold text-sm">Đơn hàng hiện tại</h3>
@@ -86,10 +89,11 @@ const OrderPanel = ({ table, ordersHook, menuHook }: OrderPanelProps) => {
                 <div className="flex items-center justify-between">
                   <div className="flex-1 min-w-0">
                     <span className="font-medium">{item.menu_item?.name || "—"}</span>
-                    {item.status === "preparing" && <Badge variant="secondary" className="ml-2 text-xs">🔥 Đang làm</Badge>}
-                    {item.status === "served" && <Badge variant="secondary" className="ml-2 text-xs bg-green-100 text-green-700">✅ Xong</Badge>}
+                    {item.status === "preparing" && <Badge className="ml-2 text-xs bg-amber-100 text-amber-700 border-amber-300">🔥 Đang làm</Badge>}
+                    {item.status === "served" && <Badge className="ml-2 text-xs bg-emerald-100 text-emerald-700 border-emerald-300">✅ Xong</Badge>}
                   </div>
                   <div className="flex items-center gap-2">
+                    {/* Only pending items can be edited */}
                     {item.status === "pending" ? (
                       <>
                         <Button variant="outline" size="icon" className="h-7 w-7"
@@ -104,13 +108,12 @@ const OrderPanel = ({ table, ordersHook, menuHook }: OrderPanelProps) => {
                         ><Plus className="h-3 w-3" /></Button>
                       </>
                     ) : (
-                      <span className="font-medium">x{item.quantity}</span>
+                      <span className="font-medium text-muted-foreground">x{item.quantity}</span>
                     )}
-                    <span className="w-24 text-right font-medium">
-                      {formatPrice(item.unit_price * item.quantity)}
-                    </span>
+                    <span className="w-24 text-right font-medium">{formatPrice(item.unit_price * item.quantity)}</span>
                   </div>
                 </div>
+                {/* Notes */}
                 {item.notes && editingNoteId !== item.id && (
                   <p className="text-xs text-muted-foreground italic ml-1 flex items-center gap-1">
                     <MessageSquare className="h-3 w-3" /> {item.notes}
@@ -122,9 +125,7 @@ const OrderPanel = ({ table, ordersHook, menuHook }: OrderPanelProps) => {
                 {item.status === "pending" && editingNoteId !== item.id && !item.notes && (
                   <button className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
                     onClick={() => { setEditingNoteId(item.id); setNoteText(""); }}
-                  >
-                    <MessageSquare className="h-3 w-3" /> Thêm ghi chú
-                  </button>
+                  ><MessageSquare className="h-3 w-3" /> Thêm ghi chú</button>
                 )}
                 {editingNoteId === item.id && (
                   <div className="flex gap-1 mt-1">
@@ -143,18 +144,19 @@ const OrderPanel = ({ table, ordersHook, menuHook }: OrderPanelProps) => {
             <span className="text-primary">{formatPrice(total)}</span>
           </div>
           {hasPendingItems && (
-            <Button onClick={handleSubmitOrder} className="w-full">
+            <Button onClick={handleSubmitOrder} className="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700">
               <Send className="h-4 w-4 mr-2" /> Gửi bếp
             </Button>
           )}
         </div>
       )}
 
+      {/* Menu for adding items */}
       <div className="space-y-3">
         <h3 className="font-semibold text-sm">Thêm món</h3>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Tìm món..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-9" />
+          <Input placeholder="Tìm món nhanh..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-9" />
         </div>
         <div className="flex gap-2 flex-wrap">
           {categories.map((cat) => (
@@ -162,17 +164,15 @@ const OrderPanel = ({ table, ordersHook, menuHook }: OrderPanelProps) => {
               className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
                 selectedCategory === cat ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"
               }`}
-            >
-              {categoryLabel[cat] || cat}
-            </button>
+            >{categoryLabel[cat] || cat}</button>
           ))}
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[400px] overflow-y-auto">
           {filteredMenu.map((item) => (
             <button key={item.id} disabled={!item.is_available}
               onClick={() => item.is_available && handleAddItem(item)}
-              className={`flex items-center justify-between p-3 rounded-lg border transition-colors text-left ${
-                !item.is_available ? "opacity-50 cursor-not-allowed bg-muted/30" : "hover:bg-accent/50 cursor-pointer"
+              className={`flex items-center justify-between p-3 rounded-xl border transition-all text-left ${
+                !item.is_available ? "opacity-40 cursor-not-allowed" : "hover:border-primary/50 hover:shadow-sm cursor-pointer"
               }`}
             >
               <div>

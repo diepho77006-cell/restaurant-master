@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
 import { useRealtimeMenu } from "@/hooks/useRealtimeMenu";
 import type { Tables as DbTables, Enums } from "@/integrations/supabase/types";
 import { Button } from "@/components/ui/button";
@@ -22,7 +23,12 @@ const categoryLabels: Record<MenuCategory, string> = {
   drink: "Đồ uống",
 };
 
+/**
+ * Menu management page
+ * Admin and Staff can add/edit/delete menu items
+ */
 const MenuPage = () => {
+  const { user } = useAuth();
   const { menu, addMenuItem, updateMenuItem, deleteMenuItem } = useRealtimeMenu();
   const [showDialog, setShowDialog] = useState(false);
   const [editing, setEditing] = useState<MenuItem | null>(null);
@@ -68,19 +74,19 @@ const MenuPage = () => {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Thực đơn</h1>
-          <p className="text-muted-foreground text-sm">{menu.length} món</p>
+          <p className="text-muted-foreground text-sm">{menu.length} món · {menu.filter(m => m.is_available).length} có sẵn</p>
         </div>
-        <Button size="sm" onClick={openAdd}>
+        <Button size="sm" onClick={openAdd} className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700">
           <Plus className="h-4 w-4 mr-1" /> Thêm món
         </Button>
       </div>
 
       <div className="relative max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input placeholder="Tìm món..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-9" />
+        <Input placeholder="Tìm món nhanh..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-9" />
       </div>
 
-      <div className="border rounded-lg overflow-x-auto">
+      <div className="border rounded-xl overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -95,14 +101,14 @@ const MenuPage = () => {
             {filteredMenu.map((item) => (
               <TableRow key={item.id}>
                 <TableCell className="font-medium">{item.name}</TableCell>
-                <TableCell>{categoryLabels[item.category] || item.category}</TableCell>
-                <TableCell>{formatPrice(item.price)}</TableCell>
+                <TableCell><Badge variant="outline">{categoryLabels[item.category] || item.category}</Badge></TableCell>
+                <TableCell className="font-semibold">{formatPrice(item.price)}</TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
                     <Switch checked={item.is_available} onCheckedChange={() => handleToggle(item)} />
-                    <Badge variant={item.is_available ? "default" : "secondary"}>
+                    <span className={`text-xs font-medium ${item.is_available ? "text-emerald-600" : "text-muted-foreground"}`}>
                       {item.is_available ? "Có sẵn" : "Hết"}
-                    </Badge>
+                    </span>
                   </div>
                 </TableCell>
                 <TableCell className="text-right">
@@ -125,16 +131,14 @@ const MenuPage = () => {
         <DialogContent>
           <DialogHeader><DialogTitle>{editing ? "Sửa món" : "Thêm món mới"}</DialogTitle></DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-2"><Label>Tên món</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
-            <div className="space-y-2"><Label>Giá (VND)</Label><Input type="number" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} /></div>
+            <div className="space-y-2"><Label>Tên món</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="VD: Phở Bò" /></div>
+            <div className="space-y-2"><Label>Giá (VND)</Label><Input type="number" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="55000" /></div>
             <div className="space-y-2">
               <Label>Danh mục</Label>
               <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v as MenuCategory })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {Object.entries(categoryLabels).map(([k, v]) => (
-                    <SelectItem key={k} value={k}>{v}</SelectItem>
-                  ))}
+                  {Object.entries(categoryLabels).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
