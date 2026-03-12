@@ -1,0 +1,95 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 80 8% 32%;
+    --foreground: 60 10% 85%;
+
+    --card: 75 8% 25%;
+    --card-foreground: 60 10% 85%;
+
+    --popover: 75 8% 25%;
+    --popover-foreground: 60 10% 85%;
+
+    --primary: 24 85% 52%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 75 6% 30%;
+    --secondary-foreground: 60 10% 85%;
+
+    --muted: 75 6% 28%;
+    --muted-foreground: 60 6% 55%;
+
+    --accent: 24 85% 52%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 75 6% 30%;
+    --input: 75 6% 30%;
+    --ring: 24 85% 52%;
+
+    --radius: 0.75rem;
+
+    /* Status colors */
+    --status-available: 142 71% 45%;
+    --status-serving: 32 95% 52%;
+    --status-payment: 0 72% 51%;
+
+    /* Sidebar */
+    --sidebar-background: 75 8% 22%;
+    --sidebar-foreground: 60 10% 75%;
+    --sidebar-primary: 24 85% 52%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 80 8% 32%;
+    --sidebar-accent-foreground: 60 10% 90%;
+    --sidebar-border: 80 6% 30%;
+    --sidebar-ring: 24 85% 52%;
+
+    /* Custom tokens */
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+    --warning: 32 95% 52%;
+    --warning-foreground: 0 0% 100%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+}
+
+@layer utilities {
+  .status-available {
+    @apply bg-[hsl(var(--status-available))] text-[hsl(var(--success-foreground))];
+  }
+  .status-serving {
+    @apply bg-[hsl(var(--status-serving))] text-[hsl(var(--warning-foreground))];
+  }
+  .status-payment {
+    @apply bg-[hsl(var(--status-payment))] text-[hsl(var(--destructive-foreground))];
+  }
+  .status-available-light {
+    background-color: hsl(142 71% 45% / 0.12);
+    color: hsl(142 71% 35%);
+  }
+  .status-serving-light {
+    background-color: hsl(32 95% 52% / 0.12);
+    color: hsl(32 95% 40%);
+  }
+  .status-payment-light {
+    background-color: hsl(0 72% 51% / 0.12);
+    color: hsl(0 72% 42%);
+  }
+}
