@@ -1,9 +1,11 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, DollarSign, TrendingUp, Receipt } from "lucide-react";
+import { Search, DollarSign, TrendingUp, Receipt, Eye } from "lucide-react";
 
 interface PaidOrder {
   id: string;
@@ -13,9 +15,13 @@ interface PaidOrder {
   items: { name: string; quantity: number; unit_price: number }[];
 }
 
+/**
+ * History page showing paid orders and revenue stats
+ */
 const HistoryPage = () => {
   const [orders, setOrders] = useState<PaidOrder[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedOrder, setSelectedOrder] = useState<PaidOrder | null>(null);
 
   const fetchPaidOrders = useCallback(async () => {
     const { data, error } = await supabase
@@ -71,6 +77,7 @@ const HistoryPage = () => {
         <p className="text-muted-foreground text-sm">{orders.length} hóa đơn</p>
       </div>
 
+      {/* Stats cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -94,7 +101,7 @@ const HistoryPage = () => {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">TB/HĐ</CardTitle>
+            <CardTitle className="text-sm font-medium">TB / hóa đơn</CardTitle>
             <Receipt className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -103,13 +110,14 @@ const HistoryPage = () => {
         </Card>
       </div>
 
+      {/* Orders list */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between flex-wrap gap-2">
             <CardTitle className="text-base">Danh sách hóa đơn</CardTitle>
             <div className="relative w-full sm:w-72">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Tìm bàn..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-9" />
+              <Input placeholder="Tìm bàn, mã HĐ..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-9" />
             </div>
           </div>
         </CardHeader>
@@ -117,21 +125,27 @@ const HistoryPage = () => {
           {filteredOrders.length === 0 ? (
             <p className="text-center py-12 text-muted-foreground">Chưa có hóa đơn nào</p>
           ) : (
-            <div className="border rounded-lg overflow-x-auto">
+            <div className="border rounded-xl overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Bàn</TableHead>
                     <TableHead>Thời gian</TableHead>
                     <TableHead>Tổng tiền</TableHead>
+                    <TableHead className="text-right">Chi tiết</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredOrders.map((order) => (
                     <TableRow key={order.id}>
-                      <TableCell>#{order.table_number}</TableCell>
+                      <TableCell className="font-medium">#{order.table_number}</TableCell>
                       <TableCell>{formatDate(order.updated_at)}</TableCell>
                       <TableCell className="font-semibold">{formatPrice(order.total_amount)}</TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="sm" onClick={() => setSelectedOrder(order)}>
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -140,6 +154,36 @@ const HistoryPage = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Bill detail dialog */}
+      <Dialog open={!!selectedOrder} onOpenChange={() => setSelectedOrder(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Chi tiết hóa đơn — Bàn #{selectedOrder?.table_number}</DialogTitle></DialogHeader>
+          {selectedOrder && (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">{formatDate(selectedOrder.updated_at)}</p>
+              <div className="border rounded-xl divide-y">
+                <div className="grid grid-cols-4 p-3 text-sm font-semibold bg-muted/50 rounded-t-xl">
+                  <span className="col-span-2">Món</span>
+                  <span className="text-center">SL</span>
+                  <span className="text-right">Thành tiền</span>
+                </div>
+                {selectedOrder.items.map((item, i) => (
+                  <div key={i} className="grid grid-cols-4 p-3 text-sm">
+                    <span className="col-span-2">{item.name}</span>
+                    <span className="text-center">{item.quantity}</span>
+                    <span className="text-right font-medium">{formatPrice(item.unit_price * item.quantity)}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-between text-lg font-bold pt-2 border-t">
+                <span>Tổng cộng</span>
+                <span className="text-primary">{formatPrice(selectedOrder.total_amount)}</span>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
