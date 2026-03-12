@@ -55,24 +55,30 @@ export type Database = {
           created_at: string
           id: string
           menu_item_id: string
+          notes: string | null
           order_id: string
           quantity: number
+          status: Database["public"]["Enums"]["order_status"]
           unit_price: number
         }
         Insert: {
           created_at?: string
           id?: string
           menu_item_id: string
+          notes?: string | null
           order_id: string
           quantity?: number
+          status?: Database["public"]["Enums"]["order_status"]
           unit_price: number
         }
         Update: {
           created_at?: string
           id?: string
           menu_item_id?: string
+          notes?: string | null
           order_id?: string
           quantity?: number
+          status?: Database["public"]["Enums"]["order_status"]
           unit_price?: number
         }
         Relationships: [
